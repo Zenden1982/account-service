@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.simbir.health.account_service.Class.DTO.AccountCreateDTO;
-import com.simbir.health.account_service.Interface.AccountService;
+import com.simbir.health.account_service.Service.Interface.UserService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -17,11 +17,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AccountController {
 
-    private final AccountService accountService;
+    private final UserService accountService;
 
     @PostMapping
     public ResponseEntity<String> createAccount(@RequestBody AccountCreateDTO createAccountDTO) {
-        String answer = accountService.createAccount(createAccountDTO);
+        String answer = accountService.registation(createAccountDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(answer);
     }
 }
