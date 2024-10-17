@@ -1,7 +1,10 @@
 package com.simbir.health.account_service.Configs;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -15,7 +18,7 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.simbir.health.account_service.Filter.JwtRequestFilter;
-import com.simbir.health.account_service.Service.Interface.UserService;
+import com.simbir.health.account_service.Service.Interface.AuthenticationService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,14 +29,18 @@ public class SecurityConfig {
 
     private final JwtRequestFilter jwtRequestFilter;
 
-    private final UserService userService;
+    @Lazy
+    @Autowired
+    private AuthenticationService userService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
                 .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                .authorizeHttpRequests(
+                        auth -> auth.requestMatchers(HttpMethod.GET, "Authentication/test").authenticated().anyRequest()
+                                .permitAll())
                 .sessionManagement(sessionManagementCustomizer -> sessionManagementCustomizer
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exceptionHandlingCustomizer -> exceptionHandlingCustomizer

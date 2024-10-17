@@ -1,5 +1,6 @@
 package com.simbir.health.account_service.Service.Implementation;
 
+import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -7,6 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,7 +22,7 @@ import com.simbir.health.account_service.Class.DTO.AccountCreatedDTO;
 import com.simbir.health.account_service.Class.DTO.LoginDTO;
 import com.simbir.health.account_service.Configs.JwtTokenUtils;
 import com.simbir.health.account_service.Repository.UserRepository;
-import com.simbir.health.account_service.Service.Interface.UserService;
+import com.simbir.health.account_service.Service.Interface.AuthenticationService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 @Service
-public class UserServiceImpl implements UserService {
+public class AuthenticationServiceImpl implements AuthenticationService {
 
     private final KafkaTemplate<String, AccountCreatedDTO> kafkaTemplate;
 
@@ -36,10 +40,14 @@ public class UserServiceImpl implements UserService {
 
     @Lazy
     @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Lazy
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Override
-    public String registation(AccountCreateDTO createAccountDTO) {
+    public String signUp(AccountCreateDTO createAccountDTO) {
         String accountId = UUID.randomUUID().toString();
         AccountCreatedDTO accountCreatedDTO = new AccountCreatedDTO(accountId, createAccountDTO.getFirstName(),
                 createAccountDTO.getLastName(), createAccountDTO.getUsername(), createAccountDTO.getPassword());
@@ -66,8 +74,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String login(LoginDTO loginDTO) {
-        return "OK";
+    public String signIn(LoginDTO loginDTO) {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginDTO.getUsername(), loginDTO.getPassword()));
+
+        } catch (AuthenticationException e) {
+            return e.getMessage();
+        }
+        UserDetails user = loadUserByUsername(loginDTO.getUsername());
+        return jwtTokenUtils.generateAccessToken(user);
     }
 
     @Override
@@ -79,6 +95,28 @@ public class UserServiceImpl implements UserService {
                     user.getAuthorities());
         } else {
             throw new UsernameNotFoundException("User not found with username: " + username);
+        }
+
+    }
+
+    @Override
+    public void signOut(String token) {
+        jwtTokenUtils.signOut();
+    }
+
+    @Override
+    public Boolean validate(String token) {
+        return !jwtTokenUtils.getClaimsFromToken(token).getExpiration().before(new Date());
+    }
+
+    @Override
+    public String refreshAccessToken(String refreshToken) {
+        if (Boolean.TRUE.equals(validate(refreshToken))) {
+            String username = jwtTokenUtils.getUsernameFromToken(refreshToken);
+            UserDetails user = loadUserByUsername(username);
+            return jwtTokenUtils.generateAccessToken(user);
+        } else {
+            throw new RuntimeException("Invalid refresh token");
         }
 
     }
