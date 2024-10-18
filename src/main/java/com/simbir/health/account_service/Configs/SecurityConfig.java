@@ -38,6 +38,8 @@ public class SecurityConfig {
 
         http
                 .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.disable())
+                .headers(headers -> headers.frameOptions(frameOptionsCustomizer -> frameOptionsCustomizer.disable()))
                 .authorizeHttpRequests(
                         auth -> auth.requestMatchers(HttpMethod.GET, "Authentication/test").authenticated().anyRequest()
                                 .permitAll())

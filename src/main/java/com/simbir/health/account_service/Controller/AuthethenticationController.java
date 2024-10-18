@@ -10,10 +10,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.simbir.health.account_service.Class.TokenPair;
 import com.simbir.health.account_service.Class.DTO.AccountCreateDTO;
 import com.simbir.health.account_service.Class.DTO.LoginDTO;
 import com.simbir.health.account_service.Service.Interface.AuthenticationService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -31,14 +33,22 @@ public class AuthethenticationController {
     }
 
     @PostMapping("SignIn")
-    public ResponseEntity<String> signIn(@RequestBody LoginDTO loginDTO) {
-        String token = accountService.signIn(loginDTO);
+    public ResponseEntity<TokenPair> signIn(@RequestBody LoginDTO loginDTO) {
+        TokenPair token = accountService.signIn(loginDTO);
         return ResponseEntity.status(HttpStatus.OK).body(token);
     }
 
     @PutMapping("SignOut")
-    public ResponseEntity<Void> signOut() {
+    public ResponseEntity<Void> signOut(HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        accountService.signOut(token.substring(7));
         return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @PostMapping("Refresh")
+    public ResponseEntity<TokenPair> refreshTokens(@RequestBody String refreshToken) {
+        TokenPair tokens = accountService.refreshTokens(refreshToken);
+        return ResponseEntity.status(HttpStatus.OK).body(tokens);
     }
 
     @GetMapping("test")

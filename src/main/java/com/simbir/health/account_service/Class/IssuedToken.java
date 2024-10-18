@@ -1,6 +1,7 @@
 package com.simbir.health.account_service.Class;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
@@ -12,6 +13,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class IssuedToken {
+
+    @Id
     private String jti;
 
     @ManyToOne

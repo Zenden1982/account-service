@@ -16,6 +16,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.simbir.health.account_service.Class.TokenPair;
 import com.simbir.health.account_service.Class.User;
 import com.simbir.health.account_service.Class.DTO.AccountCreateDTO;
 import com.simbir.health.account_service.Class.DTO.AccountCreatedDTO;
@@ -74,16 +75,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public String signIn(LoginDTO loginDTO) {
+    public TokenPair signIn(LoginDTO loginDTO) {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginDTO.getUsername(), loginDTO.getPassword()));
 
         } catch (AuthenticationException e) {
-            return e.getMessage();
+            log.error(e.getMessage());
         }
-        UserDetails user = loadUserByUsername(loginDTO.getUsername());
-        return jwtTokenUtils.generateAccessToken(user);
+        UserDetails userDetails = loadUserByUsername(loginDTO.getUsername());
+        return new TokenPair(jwtTokenUtils.generateRefreshToken(userDetails),
+                jwtTokenUtils.generateAccessToken(userDetails));
     }
 
     @Override
@@ -101,7 +103,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public void signOut(String token) {
-        jwtTokenUtils.signOut();
+        jwtTokenUtils.signOut(token);
     }
 
     @Override
@@ -110,14 +112,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public String refreshAccessToken(String refreshToken) {
-        if (Boolean.TRUE.equals(validate(refreshToken))) {
-            String username = jwtTokenUtils.getUsernameFromToken(refreshToken);
-            UserDetails user = loadUserByUsername(username);
-            return jwtTokenUtils.generateAccessToken(user);
-        } else {
-            throw new RuntimeException("Invalid refresh token");
-        }
+    public TokenPair refreshTokens(String refreshToken) {
+        return jwtTokenUtils.refresh(refreshToken,
+                loadUserByUsername(jwtTokenUtils.getUsernameFromToken(refreshToken)));
 
     }
 }
