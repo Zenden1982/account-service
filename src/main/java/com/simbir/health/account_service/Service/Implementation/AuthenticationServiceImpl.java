@@ -18,12 +18,12 @@ import org.springframework.stereotype.Service;
 
 import com.simbir.health.account_service.Class.TokenPair;
 import com.simbir.health.account_service.Class.User;
-import com.simbir.health.account_service.Class.DTO.AccountCreateDTO;
 import com.simbir.health.account_service.Class.DTO.AccountCreatedDTO;
-import com.simbir.health.account_service.Class.DTO.LoginDTO;
-import com.simbir.health.account_service.Configs.JwtTokenUtils;
+import com.simbir.health.account_service.Class.DTO.UserLoginDTO;
+import com.simbir.health.account_service.Class.DTO.UserRegistrationDTO;
 import com.simbir.health.account_service.Repository.UserRepository;
 import com.simbir.health.account_service.Service.Interface.AuthenticationService;
+import com.simbir.health.account_service.Util.JwtTokenUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,16 +48,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private PasswordEncoder passwordEncoder;
 
     @Override
-    public String signUp(AccountCreateDTO createAccountDTO) {
+    public String signUp(UserRegistrationDTO userRegistrationDTO) {
         String accountId = UUID.randomUUID().toString();
-        AccountCreatedDTO accountCreatedDTO = new AccountCreatedDTO(accountId, createAccountDTO.getFirstName(),
-                createAccountDTO.getLastName(), createAccountDTO.getUsername(), createAccountDTO.getPassword());
+        AccountCreatedDTO accountCreatedDTO = new AccountCreatedDTO(accountId, userRegistrationDTO.getFirstName(),
+                userRegistrationDTO.getLastName(), userRegistrationDTO.getUsername(),
+                userRegistrationDTO.getPassword());
 
         User user = User.builder()
-                .firstName(createAccountDTO.getFirstName())
-                .lastName(createAccountDTO.getLastName())
-                .username(createAccountDTO.getUsername())
-                .password(passwordEncoder.encode(createAccountDTO.getPassword()))
+                .firstName(userRegistrationDTO.getFirstName())
+                .lastName(userRegistrationDTO.getLastName())
+                .username(userRegistrationDTO.getUsername())
+                .password(passwordEncoder.encode(userRegistrationDTO.getPassword()))
                 .build();
 
         userRepository.save(user);
@@ -75,15 +76,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public TokenPair signIn(LoginDTO loginDTO) {
+    public TokenPair signIn(UserLoginDTO userLoginDTO) {
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginDTO.getUsername(), loginDTO.getPassword()));
+                    new UsernamePasswordAuthenticationToken(userLoginDTO.getUsername(), userLoginDTO.getPassword()));
 
         } catch (AuthenticationException e) {
             log.error(e.getMessage());
         }
-        UserDetails userDetails = loadUserByUsername(loginDTO.getUsername());
+        UserDetails userDetails = loadUserByUsername(userLoginDTO.getUsername());
         return new TokenPair(jwtTokenUtils.generateRefreshToken(userDetails),
                 jwtTokenUtils.generateAccessToken(userDetails));
     }
@@ -108,7 +109,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public Boolean validate(String token) {
-        return !jwtTokenUtils.getClaimsFromToken(token).getExpiration().before(new Date());
+        try {
+            return !jwtTokenUtils.getClaimsFromToken(token).getExpiration().before(new Date());
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Override

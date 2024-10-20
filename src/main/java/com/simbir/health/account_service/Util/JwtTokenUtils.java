@@ -1,4 +1,4 @@
-package com.simbir.health.account_service.Configs;
+package com.simbir.health.account_service.Util;
 
 import java.time.Duration;
 import java.util.Date;

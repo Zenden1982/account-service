@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -41,7 +40,14 @@ public class SecurityConfig {
                 .cors(cors -> cors.disable())
                 .headers(headers -> headers.frameOptions(frameOptionsCustomizer -> frameOptionsCustomizer.disable()))
                 .authorizeHttpRequests(
-                        auth -> auth.requestMatchers(HttpMethod.GET, "Authentication/test").authenticated().anyRequest()
+                        auth -> auth
+                                .requestMatchers("Authentication/test").authenticated()
+                                .requestMatchers("Authentication/SignOut").authenticated()
+                                .requestMatchers("Accounts/Me").authenticated()
+                                .requestMatchers("Accounts/Update").authenticated()
+                                .requestMatchers("Accounts").hasRole("ADMIN")
+                                .requestMatchers("Accounts/{id}").hasRole("ADMIN")
+                                .anyRequest()
                                 .permitAll())
                 .sessionManagement(sessionManagementCustomizer -> sessionManagementCustomizer
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
